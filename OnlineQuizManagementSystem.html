@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Quiz Management System — ERD</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f3ee;
+      color: #2c2c2a;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #1a1a18;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #73726c;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #d3d1c7;
+      padding: 32px;
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      overflow-x: auto;
+    }
+
+    #erd svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      font-size: 13px;
+      color: #5f5e5a;
+      padding: 0 4px;
+    }
+
+    .leg-item { display: flex; align-items: center; gap: 7px; }
+    .leg-dot {
+      width: 11px; height: 11px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .leg-note {
+      margin-left: auto;
+      font-size: 12px;
+      color: #888780;
+    }
+
+    @media (max-width: 600px) {
+      .leg-note { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Online Quiz Management System</h1>
+    <p>Entity Relationship Diagram — 8 core entities</p>
+  </header>
+
+  <div class="card">
+    <div id="erd"></div>
+  </div>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#534AB7"></div><span>Identity &amp; Access</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#0F6E56"></div><span>Quiz Content</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#BA7517"></div><span>Attempt &amp; Results</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div><span>System</span></div>
+    <div class="leg-note">||--o{ = one-to-many &nbsp;·&nbsp; }|--|{ = many-to-many &nbsp;·&nbsp; ||--|| = one-to-one</div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      themeVariables: {
+        darkMode: false,
+        fontSize: '13px',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        lineColor: '#73726c',
+        textColor: '#3d3d3a',
+        primaryColor: '#EEEDFE',
+        primaryBorderColor: '#534AB7',
+        primaryTextColor: '#26215C',
+      },
+    });
+
+    const diagram = `erDiagram
+  USER ||--o{ QUIZ : "creates"
+  USER ||--o{ QUIZ_ATTEMPT : "takes"
+  USER ||--o{ NOTIFICATION : "receives"
+  USER ||--o{ REPORT : "generates"
+  LOCATION ||--o{ USER : "resides in"
+  LOCATION ||--o{ LOCATION : "parent of"
+  QUIZ }|--|{ QUESTION : "contains"
+  QUIZ ||--o{ QUIZ_ATTEMPT : "has attempts"
+  QUIZ ||--o{ REPORT : "reported in"
+  QUESTION ||--o{ OPTION : "has options"
+  QUIZ_ATTEMPT ||--o{ ANSWER : "contains"
+  QUIZ_ATTEMPT ||--|| REPORT : "tracked by"
+
+  USER {
+    Long id PK
+    String username
+    String password
+    String email
+    Enum role
+    Long location_id FK
+  }
+
+  LOCATION {
+    Long id PK
+    String name
+    Enum locationType
+    Long parent_id FK
+  }
+
+  QUIZ {
+    Long id PK
+    String title
+    Enum status
+    DateTime startTime
+    DateTime endTime
+    Long created_by FK
+  }
+
+  QUESTION {
+    Long id PK
+    String content
+    Enum type
+    Double score
+  }
+
+  OPTION {
+    Long id PK
+    String text
+    Boolean isCorrect
+    Long question_id FK
+  }
+
+  QUIZ_ATTEMPT {
+    Long id PK
+    Long user_id FK
+    Long quiz_id FK
+    Enum status
+    Double score
+  }
+
+  ANSWER {
+    Long id PK
+    String content
+    Boolean isCorrect
+    Long attempt_id FK
+  }
+
+  REPORT {
+    Long id PK
+    String type
+    Double totalScore
+    Long attempt_id FK
+    Long generated_by FK
+  }
+
+  NOTIFICATION {
+    Long id PK
+    String message
+    Long user_id FK
+    DateTime timestamp
+  }
+`;
+
+    const { svg } = await mermaid.render('erd-svg', diagram);
+    document.getElementById('erd').innerHTML = svg;
+
+    // Round entity box corners
+    document.querySelectorAll('#erd svg .node').forEach(node => {
+      const firstPath = node.querySelector('path[d]');
+      if (!firstPath) return;
+      const d = firstPath.getAttribute('d');
+      const nums = d.match(/-?[\d.]+/g)?.map(Number);
+      if (!nums || nums.length < 8) return;
+      const xs = [nums[0], nums[2], nums[4], nums[6]];
+      const ys = [nums[1], nums[3], nums[5], nums[7]];
+      const x = Math.min(...xs), y = Math.min(...ys);
+      const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', w); rect.setAttribute('height', h);
+      rect.setAttribute('rx', '8');
+      for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+        if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+      }
+      firstPath.replaceWith(rect);
+    });
+
+    // Strip borders from attribute rows
+    document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(p => {
+      p.setAttribute('stroke', 'none');
+    });
+
+    // Color entity headers by domain
+    const colorMap = {
+      USER:         { fill: '#EEEDFE', stroke: '#534AB7', text: '#26215C' },
+      LOCATION:     { fill: '#EEEDFE', stroke: '#534AB7', text: '#26215C' },
+      QUIZ:         { fill: '#E1F5EE', stroke: '#0F6E56', text: '#04342C' },
+      QUESTION:     { fill: '#E1F5EE', stroke: '#0F6E56', text: '#04342C' },
+      OPTION:       { fill: '#E1F5EE', stroke: '#0F6E56', text: '#04342C' },
+      QUIZ_ATTEMPT: { fill: '#FAEEDA', stroke: '#854F0B', text: '#412402' },
+      ANSWER:       { fill: '#FAEEDA', stroke: '#854F0B', text: '#412402' },
+      REPORT:       { fill: '#FAEEDA', stroke: '#854F0B', text: '#412402' },
+      NOTIFICATION: { fill: '#E6F1FB', stroke: '#185FA5', text: '#042C53' },
+    };
+
+    document.querySelectorAll('#erd svg .entityBox, #erd svg [class*="entityBox"]').forEach(el => {
+      const label = el.closest('g')?.querySelector('text')?.textContent?.trim();
+      if (label && colorMap[label]) {
+        el.setAttribute('fill', colorMap[label].fill);
+        el.setAttribute('stroke', colorMap[label].stroke);
+      }
+    });
+
+    document.querySelectorAll('#erd svg .entityLabel, #erd svg [class*="entityLabel"]').forEach(el => {
+      const txt = el.textContent?.trim();
+      if (txt && colorMap[txt]) {
+        el.setAttribute('fill', colorMap[txt].text);
+        el.style.fill = colorMap[txt].text;
+      }
+    });
+  </script>
+</body>
+</html>
